@@ -2,14 +2,14 @@
 name = "cache-fn"
 version = "0.1.0"
 edition = "2021"
-description = "A Rust library for caching function results"
+description = "A Rust library for caching functions"
 license = "GPL-3.0"
 authors = ["Md.Sadiq <mohammadsadiq4950@gmail.com>"]
 repository = "https://github.com/MdSadiqMd/CacheFn"
 documentation = "https://docs.rs/cache-fn"
 readme = "README.md"
-keywords = ["cache", "function", "memoize", "performance", "optimization"]
-categories = ["caching", "memoize", "performance", "optimization"]
+keywords = ["cache", "function"]
+categories = ["caching"]
 
 [dependencies]
 reqwest = { version = "0.11", features = ["json"] }
