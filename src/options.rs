@@ -24,7 +24,7 @@ impl Default for CacheOptions {
 }
 
 mod duration_millis {
-    use serde::{Deserializer, Serializer};
+    use serde::{Deserialize, Deserializer, Serializer};
     use std::time::Duration;
 
     pub fn serialize<S>(dur: &Option<Duration>, ser: S) -> Result<S::Ok, S::Error>
@@ -41,7 +41,7 @@ mod duration_millis {
     where
         D: Deserializer<'de>,
     {
-        let millis: Option<u64> = Option::deserialize(de)?;
+        let millis: Option<u64> = Deserialize::deserialize(de)?;
         Ok(millis.map(Duration::from_millis))
     }
 }
