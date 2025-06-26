@@ -14,9 +14,9 @@ pub struct CacheOptions {
 impl Default for CacheOptions {
     fn default() -> Self {
         CacheOptions {
-            worker: String::from(""),
-            api_key: String::from(""),
-            revalidate: Some(Duration::from_secs(604800)), // 1 week default
+            worker: String::new(),
+            api_key: String::new(),
+            revalidate: Some(Duration::from_secs(604800)), // 1 week
             tags: Vec::new(),
             should_cache: None,
         }
@@ -27,21 +27,21 @@ mod duration_millis {
     use serde::{Deserializer, Serializer};
     use std::time::Duration;
 
-    pub fn serialize<S>(duration: &Option<Duration>, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(dur: &Option<Duration>, ser: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        match duration {
-            Some(d) => serializer.serialize_u64(d.as_millis() as u64),
-            None => serializer.serialize_none(),
+        match dur {
+            Some(d) => ser.serialize_u64(d.as_millis() as u64),
+            None => ser.serialize_none(),
         }
     }
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
+    pub fn deserialize<'de, D>(de: D) -> Result<Option<Duration>, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let millis: Option<u64> = serde::Deserialize::deserialize(deserializer)?;
+        let millis: Option<u64> = Option::deserialize(de)?;
         Ok(millis.map(Duration::from_millis))
     }
 }

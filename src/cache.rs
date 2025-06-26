@@ -1,17 +1,13 @@
+use crate::{client::WorkerClient, error::CacheError, options::CacheOptions};
+use futures::future::BoxFuture;
 use serde::{de::DeserializeOwned, Serialize};
 use std::collections::hash_map::DefaultHasher;
-use std::future::Future;
 use std::hash::{Hash, Hasher};
-
-use crate::client::WorkerClient;
-use crate::error::CacheError;
-use crate::options::CacheOptions;
 
 pub struct Cache {
     client: WorkerClient,
 }
 
-type CacheFuture<R> = Box<dyn Future<Output = Result<R, CacheError>> + Send + 'static>;
 impl Cache {
     pub fn new(options: CacheOptions) -> Self {
         Self {
@@ -28,15 +24,15 @@ impl Cache {
         func: F,
         tags: Vec<String>,
         options: Option<CacheOptions>,
-    ) -> impl Fn(Args) -> CacheFuture<R>
+    ) -> impl Fn(Args) -> BoxFuture<'static, Result<R, CacheError>>
     where
         F: Fn(Args) -> Fut + Clone + Send + 'static,
-        Fut: Future<Output = R> + Send + 'static,
+        Fut: std::future::Future<Output = R> + Send + 'static,
         Args: Clone + Serialize + Send + 'static,
         R: Serialize + DeserializeOwned + Send + Sync + 'static,
     {
         let client = self.client.clone();
-        let mut cache_options = options.unwrap_or_else(|| CacheOptions::default());
+        let mut cache_options = options.unwrap_or_default();
         cache_options.tags = tags;
 
         move |args: Args| {
@@ -45,15 +41,16 @@ impl Cache {
             let client = client.clone();
             let options = cache_options.clone();
 
-            Box::new(async move {
+            Box::pin(async move {
                 let mut hasher = DefaultHasher::new();
                 let args_serialized =
                     serde_json::to_string(&args_clone).map_err(CacheError::Serialization)?;
                 args_serialized.hash(&mut hasher);
 
                 let key = format!("{:x}", hasher.finish());
-                if let Some(cached_result) = client.get::<R>(&key).await? {
-                    return Ok(cached_result);
+
+                if let Some(cached) = client.get::<R>(&key).await? {
+                    return Ok(cached);
                 }
 
                 let result = func(args).await;
